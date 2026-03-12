@@ -413,6 +413,39 @@
         localStorage.setItem(USER_HISTORY_KEY, JSON.stringify(items));
       }
 
+      async function postJson(url, payload) {
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          return await res.json();
+        } catch (err) {
+          console.warn("Backend request failed:", err);
+          return null;
+        }
+      }
+
+      async function saveScanToBackend(scan) {
+        if (!user || !user.id) return;
+        await postJson("http://localhost:5000/api/scans", {
+          userId: user.id,
+          text: scan.text,
+          similarity: scan.similarity,
+          topSources: scan.topSources || [],
+        });
+      }
+
+      async function saveLibraryItemToBackend(item) {
+        if (!user || !user.id) return;
+        await postJson("http://localhost:5000/api/library", {
+          userId: user.id,
+          title: item.title,
+          text: item.text,
+        });
+      }
+
       function escapeHtml(str) {
         return (str || "")
           .replaceAll("&", "&amp;")
@@ -661,15 +694,20 @@
       saveBtn.addEventListener("click", () => {
         const raw = (textInput.value || "").trim();
         if (!raw) return;
-        const lib = getLibrary();
-        lib.unshift({
+        const item = {
           id: `lib-${Date.now()}`,
           title: `Saved text • ${new Date().toLocaleString()}`,
           userName: user.name, // Store user name for instructor comparison
           text: raw,
-        });
+        };
+
+        const lib = getLibrary();
+        lib.unshift(item);
         setLibrary(lib.slice(0, 30));
         scoreNoteEl.textContent = "Saved to your local library.";
+
+        // Persist to backend (if available)
+        saveLibraryItemToBackend(item);
       });
 
       clearLibBtn.addEventListener("click", () => {
@@ -713,14 +751,20 @@
             : "Low similarity detected. Content appears mostly original.";
 
         // Store scan result in history
-        const history = getHistory();
-        history.unshift({
+        const scanRecord = {
           text: inputRaw,
           similarity: percent,
           date: new Date().toISOString(),
-        });
+          topSources: scoredSources.map((s) => ({ title: s.title, sim: Math.round(s.sim * 100) })),
+        };
+
+        const history = getHistory();
+        history.unshift(scanRecord);
         setHistory(history.slice(0, 10)); // Keep last 10 scans
         renderHistory();
+
+        // Persist to backend (if available)
+        saveScanToBackend(scanRecord);
 
         sourcesEl.innerHTML = scoredSources.length
           ? scoredSources

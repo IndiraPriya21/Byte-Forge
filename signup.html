@@ -205,7 +205,7 @@
         errorEl.style.display = "block";
       }
 
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         errorEl.style.display = "none";
 
@@ -224,6 +224,26 @@
         if (password !== confirmPassword) {
           showError("Passwords do not match.");
           return;
+        }
+
+        // Try creating the user via backend first
+        try {
+          const response = await fetch("http://localhost:5000/api/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, username, email, role, password }),
+          });
+
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.error || "Could not create account");
+          }
+
+          alert("Account created successfully. You can now log in.");
+          window.location.href = "./login.html";
+          return;
+        } catch (err) {
+          console.warn("Backend signup failed, falling back to localStorage:", err.message);
         }
 
         const users = getUsers();
@@ -248,7 +268,7 @@
         users.push(newUser);
         setUsers(users);
 
-        setCurrentUser({ name: newUser.name, email: newUser.email, username: newUser.username, role: newUser.role });
+        setCurrentUser({ id: newUser.username, name: newUser.name, email: newUser.email, username: newUser.username, role: newUser.role });
         window.location.href = "./main.html";
       });
 

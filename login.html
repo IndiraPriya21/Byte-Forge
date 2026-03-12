@@ -160,21 +160,43 @@
         errorEl.style.display = "block";
       }
 
-      form.addEventListener("submit", (e) => {
+      form.addEventListener("submit", async (e) => {
         e.preventDefault();
         errorEl.style.display = "none";
 
-        const identifier = document.getElementById("identifier").value.trim().toLowerCase();
-        const role = document.getElementById("role").value.trim().toLowerCase();
+        const identifier = document.getElementById("identifier").value.trim();
+        const role = document.getElementById("role").value.trim();
         const password = passwordInput.value;
+
+        // Try backend login first (if backend is running)
+        try {
+          const response = await fetch("http://localhost:5000/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier, role, password }),
+          });
+
+          if (!response.ok) {
+            const body = await response.json().catch(() => ({}));
+            throw new Error(body.error || "Invalid credentials");
+          }
+
+          const { user } = await response.json();
+          setCurrentUser(user);
+          window.location.href = "./main.html";
+          return;
+        } catch (err) {
+          // Fallback to localStorage if backend unavailable
+          console.warn("Backend login failed, falling back to localStorage:", err.message);
+        }
 
         const users = getUsers();
         const user = users.find((u) => {
           const email = (u.email || "").toLowerCase();
           const username = (u.username || "").toLowerCase();
           const userRole = (u.role || "").toLowerCase();
-          const matchesId = identifier === email || identifier === username;
-          const matchesRole = role === userRole;
+          const matchesId = identifier.toLowerCase() === email || identifier.toLowerCase() === username;
+          const matchesRole = role.toLowerCase() === userRole;
           return matchesId && matchesRole;
         });
 
@@ -183,7 +205,7 @@
           return;
         }
 
-        setCurrentUser({ name: user.name, email: user.email, username: user.username, role: user.role });
+        setCurrentUser({ id: user.id || user.username, name: user.name, email: user.email, username: user.username, role: user.role });
         window.location.href = "./main.html";
       });
 
