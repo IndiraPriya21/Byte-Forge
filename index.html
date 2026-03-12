@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CodeTrace – Get Started</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="background"></div>
+    <div class="overlay"></div>
+
+    <main class="glass-card">
+      <header class="header-row">
+        <div class="title-group">
+          <img src="./Logo.png" class="logo-img" alt="Logo" />
+          <div class="title-text">
+            <div class="codetrace-title">
+              <div class="text-row">
+                <span class="code">Code</span><span class="trace">Trace</span>
+                <div class="reflection">CodeTrace</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <a href="./login.html" class="btn btn-ghost" id="loginBtn">Log in</a>
+          <a href="./signup.html" class="btn btn-primary" id="signupBtn">Sign up</a>
+          <a href="./main.html" class="btn btn-primary" id="dashboardBtn" style="display: none">Go to main</a>
+          <button type="button" class="btn btn-ghost" id="logoutBtn" style="display: none">Log out</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="content-main">
+          <p>
+            The Code Plagiarism Detection System is designed to identify similarities between different programming
+            codes and detect potential plagiarism. In academic institutions and coding platforms, students often submit
+            programming assignments that may contain copied or slightly modified code. Detecting such similarities
+            manually is difficult and time-consuming. Therefore, an automated system is required to analyze and compare
+            source code efficiently.
+          </p>
+          <p>
+            This system provides a platform where users can submit their programming code and automatically check
+            whether it is similar to previously submitted programs. By analyzing structural and logical patterns in the
+            code, the system determines the degree of similarity and reports possible plagiarism.
+          </p>
+        </div>
+
+        <aside class="side-panel">
+          <span class="badge">
+            <span class="badge-dot"></span>
+            Live similarity insights
+          </span>
+          <h2>Why this checker?</h2>
+          <ul>
+            <li>Detects logical and structural similarities, not just text matches.</li>
+            <li>Ideal for universities, bootcamps, and coding platforms.</li>
+            <li>Saves hours of manual comparison work for instructors.</li>
+            <li>Encourages originality and academic integrity.</li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <script>
+      const CURRENT_KEY = "cpc_currentUser";
+      function getCurrentUser() {
+        try {
+          const raw = localStorage.getItem(CURRENT_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch {
+          return null;
+        }
+      }
+
+      const user = getCurrentUser();
+      if (user) {
+        document.getElementById("loginBtn").style.display = "none";
+        document.getElementById("signupBtn").style.display = "none";
+        document.getElementById("dashboardBtn").style.display = "inline-flex";
+        document.getElementById("logoutBtn").style.display = "inline-flex";
+      }
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem(CURRENT_KEY);
+        window.location.reload();
+      });
+    </script>
+  </body>
+</html>
+

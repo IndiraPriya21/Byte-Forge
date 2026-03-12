@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Main – CodeTrace</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div
+      class="background"
+      style="background-image: url('./image3.png'); background-size: cover; background-position: center;"
+    ></div>
+    <div class="overlay"></div>
+
+    <main class="dashboard">
+      <header class="header-row" style="gap: 1rem">
+        <div class="title-group">
+          <img src="./Logo.png" class="logo-img" alt="Logo" />
+          <div class="title-text">
+            <div class="codetrace-title">
+              <div class="text-row">
+                <span class="code">Code</span><span class="trace">Trace</span>
+                <div class="reflection">CodeTrace</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <div id="userProfile" class="user-profile" style="cursor: pointer;">
+            <div class="profile-avatar" id="profileAvatar"></div>
+            <div class="profile-info">
+              <span id="profileName" class="profile-name"></span>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="logoutBtn" type="button">Log out</button>
+        </div>
+
+        <!-- Profile Full-Page Overlay -->
+        <div id="profileOverlay" class="profile-overlay" style="display: none;">
+          <div class="overlay-container">
+            <button id="closeProfileBtn" class="close-overlay-btn">&times;</button>
+            
+            <div class="overlay-content">
+              <div class="profile-header-large">
+                <div class="profile-avatar x-large" id="overlayAvatar"></div>
+                <div class="profile-details-large">
+                  <h1 id="overlayName"></h1>
+                  <p id="overlayEmail"></p>
+                  <div id="overlayRole" class="role-badge-large"></div>
+                </div>
+              </div>
+
+              <div class="overlay-grid">
+                <div class="overlay-section">
+                  <div class="section-header-row">
+                    <h2 class="overlay-section-title">Scan History</h2>
+                    <button class="btn btn-soft btn-sm" id="clearHistoryBtn" type="button">Clear History</button>
+                  </div>
+                  <div id="scanHistory" class="overlay-history-list">
+                    <span class="empty-msg">No past scans yet.</span>
+                  </div>
+                </div>
+
+                <div class="overlay-section">
+                  <h2 class="overlay-section-title">Account Statistics</h2>
+                  <div class="stats-grid-mini">
+                    <div class="mini-stat-card">
+                      <span class="stat-label">Total Scans</span>
+                      <span id="statTotalScans" class="stat-value">0</span>
+                    </div>
+                    <div class="mini-stat-card">
+                      <span class="stat-label">Member Since</span>
+                      <span id="statMemberSince" class="stat-value">Mar 2026</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <style>
+        .user-profile {
+          display: flex;
+          align-items: center;
+          gap: 0.8rem;
+          background: rgba(255, 255, 255, 0.1);
+          padding: 0.5rem 1.2rem;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .profile-avatar {
+          width: 32px;
+          height: 32px;
+          background: linear-gradient(135deg, #5be7ff, #2b7cff);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          color: #050810;
+          font-size: 0.8rem;
+        }
+        .profile-name {
+          font-size: 0.9rem;
+          font-weight: 600;
+          color: #f5f5f5;
+        }
+
+        /* Profile Full-Page Overlay Styling */
+        .profile-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(5, 7, 10, 0.96);
+          backdrop-filter: blur(25px);
+          -webkit-backdrop-filter: blur(25px);
+          z-index: 2000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: overlayFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes overlayFadeIn {
+          from { opacity: 0; backdrop-filter: blur(0); }
+          to { opacity: 1; backdrop-filter: blur(25px); }
+        }
+
+        .overlay-container {
+          position: relative;
+          width: min(1000px, 92vw);
+          max-height: 90vh;
+          background: linear-gradient(135deg, rgba(20, 22, 28, 0.8), rgba(10, 12, 16, 0.9));
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 40px;
+          padding: 4rem;
+          overflow-y: auto;
+          box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+        }
+
+        .close-overlay-btn {
+          position: absolute;
+          top: 2rem;
+          right: 2.5rem;
+          background: none;
+          border: none;
+          color: rgba(255, 255, 255, 0.4);
+          font-size: 3rem;
+          cursor: pointer;
+          transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .close-overlay-btn:hover {
+          color: #fff;
+          transform: scale(1.1);
+        }
+
+        .profile-header-large {
+          display: flex;
+          align-items: center;
+          gap: 3rem;
+          margin-bottom: 4rem;
+        }
+
+        .profile-avatar.x-large {
+          width: 120px;
+          height: 120px;
+          font-size: 3rem;
+          background: linear-gradient(135deg, #5be7ff, #2b7cff);
+          border-radius: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #050810;
+          box-shadow: 0 20px 40px rgba(43, 124, 255, 0.3);
+        }
+
+        .profile-details-large h1 {
+          font-size: 2.5rem;
+          letter-spacing: -0.02em;
+          margin-bottom: 0.5rem;
+        }
+
+        .profile-details-large p {
+          font-size: 1.1rem;
+          color: rgba(245, 245, 245, 0.5);
+          margin-bottom: 1.2rem;
+        }
+
+        .role-badge-large {
+          display: inline-block;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          padding: 0.5rem 1.2rem;
+          background: rgba(91, 231, 255, 0.1);
+          color: #5be7ff;
+          border-radius: 999px;
+          border: 1px solid rgba(91, 231, 255, 0.2);
+        }
+
+        .overlay-grid {
+          display: grid;
+          grid-template-columns: 1.5fr 1fr;
+          gap: 4rem;
+        }
+
+        .overlay-section-title {
+          font-size: 0.9rem;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          color: rgba(245, 245, 245, 0.3);
+          margin-bottom: 2rem;
+        }
+
+        .section-header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 2rem;
+        }
+
+        .overlay-history-list {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .history-item-mini {
+          padding: 1.2rem 1.5rem;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1.5rem;
+          transition: all 0.25s ease;
+          cursor: pointer;
+        }
+
+        .history-item-mini:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.15);
+          transform: translateY(-2px);
+        }
+
+        .stats-grid-mini {
+          display: grid;
+          gap: 1.5rem;
+        }
+
+        .mini-stat-card {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          padding: 1.5rem;
+          border-radius: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+
+        .stat-label {
+          font-size: 0.75rem;
+          color: rgba(245, 245, 245, 0.4);
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+        }
+
+        .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #fff;
+        }
+      </style>
+
+      <div class="dash-grid">
+        <section class="dash-card">
+          <div class="dash-card-inner">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem">
+              <div>
+                <div class="pill"><span class="badge-dot"></span> Check plagiarism</div>
+                <p style="margin-top: 0.5rem; color: rgba(245, 245, 245, 0.86)">
+                  Paste your text or upload a file. This demo runs locally and compares against your saved library and
+                  sample sources.
+                </p>
+              </div>
+              <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: flex-end">
+                <label class="btn btn-soft" style="cursor: pointer">
+                  Upload file
+                  <input id="fileInput" type="file" accept=".txt,.md,.js,.ts,.py,.java,.cpp,.c,.html,.css,.json" style="display:none" />
+                </label>
+                <button class="btn btn-primary" id="scanBtn" type="button">Check for plagiarism</button>
+              </div>
+            </div>
+
+            <div style="margin-top: 1rem">
+              <textarea id="textInput" class="text-area" placeholder="Paste your text here..."></textarea>
+              <div style="margin-top: 0.6rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap">
+                <div class="pill" id="charCount">0 chars</div>
+                <div style="display: flex; gap: 0.6rem; flex-wrap: wrap">
+                  <button class="btn btn-ghost" id="saveToLibraryBtn" type="button">Save to library</button>
+                  <button class="btn btn-ghost" id="clearLibraryBtn" type="button">Clear library</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="dash-card">
+          <div class="dash-card-inner">
+            <h2 style="font-size: 0.95rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(245,245,245,0.78)">
+              Result summary
+            </h2>
+            <p id="welcomeText" style="margin-top: 0.6rem">
+              Welcome! Paste text and click “Check for plagiarism” to see a similarity score and highlighted matches.
+            </p>
+            <div style="margin-top: 1rem; display: grid; gap: 0.75rem">
+              <div class="dash-card" style="background: rgba(0,0,0,0.3)">
+                <div class="dash-card-inner" style="padding: 0.95rem 1rem">
+                  <div class="pill">Similarity</div>
+                  <div id="score" style="margin-top: 0.5rem; font-size: 2rem; font-weight: 800">—</div>
+                  <div id="scoreNote" style="margin-top: 0.25rem; color: rgba(245,245,245,0.72); font-size: 0.9rem">
+                    No scan yet.
+                  </div>
+                </div>
+              </div>
+              <div class="dash-card" style="background: rgba(0,0,0,0.3)">
+                <div class="dash-card-inner" style="padding: 0.95rem 1rem">
+                  <div class="pill">Top sources</div>
+                  <div id="sources" style="margin-top: 0.6rem; display: grid; gap: 0.5rem; color: rgba(245,245,245,0.86)">
+                    <div style="color: rgba(245,245,245,0.6)">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="dash-card" style="margin-top: 1.4rem">
+        <div class="dash-card-inner">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap: 1rem; flex-wrap: wrap">
+            <div>
+              <div class="pill"><span class="badge-dot"></span> Highlighted report</div>
+              <p style="margin-top: 0.5rem; color: rgba(245,245,245,0.72)">
+                Matches are highlighted by risk: red (high), yellow (medium), green (low).
+              </p>
+            </div>
+          </div>
+          <div id="report" style="margin-top: 1rem; line-height: 1.8; color: rgba(245,245,245,0.9)">
+            <span style="color: rgba(245,245,245,0.6)">Run a scan to generate a report.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const CURRENT_KEY = "cpc_currentUser";
+      const LIB_KEY = "cpc_plagiarism_library";
+      const HISTORY_KEY = "cpc_scan_history";
+
+      function safeJsonParse(raw, fallback) {
+        try {
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function getCurrentUser() {
+        return safeJsonParse(localStorage.getItem(CURRENT_KEY), null);
+      }
+
+      function getLibrary() {
+        return safeJsonParse(localStorage.getItem(LIB_KEY), []);
+      }
+
+      function setLibrary(items) {
+        localStorage.setItem(LIB_KEY, JSON.stringify(items));
+      }
+
+      function getHistory() {
+        return safeJsonParse(localStorage.getItem(HISTORY_KEY), []);
+      }
+
+      function setHistory(items) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+      }
+
+      function escapeHtml(str) {
+        return (str || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function riskClassFromScore(s) {
+        if (s > 0.7) return "mark-hi";
+        if (s >= 0.4) return "mark-med";
+        return "mark-lo";
+      }
+
+      const user = getCurrentUser();
+      if (!user) {
+        window.location.replace("./index.html");
+      }
+
+      // DOM Elements
+      const profileOverlay = document.getElementById("profileOverlay");
+      const userProfile = document.getElementById("userProfile");
+      const closeProfileBtn = document.getElementById("closeProfileBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const scanHistoryEl = document.getElementById("scanHistory");
+      const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+      const textInput = document.getElementById("textInput");
+      const charCount = document.getElementById("charCount");
+      const fileInput = document.getElementById("fileInput");
+      const scanBtn = document.getElementById("scanBtn");
+      const saveBtn = document.getElementById("saveToLibraryBtn");
+      const clearLibBtn = document.getElementById("clearLibraryBtn");
+      const scoreEl = document.getElementById("score");
+      const scoreNoteEl = document.getElementById("scoreNote");
+      const sourcesEl = document.getElementById("sources");
+      const reportEl = document.getElementById("report");
+
+      // Initialize UI with User Data
+      if (user) {
+        document.getElementById("profileName").textContent = user.name;
+        document.getElementById("dropdownAvatar")?.textContent || (document.getElementById("profileAvatar").textContent = (user.name || "U")[0].toUpperCase());
+        
+        // Overlay elements
+        document.getElementById("overlayName").textContent = user.name;
+        document.getElementById("overlayEmail").textContent = user.email || "No email provided";
+        document.getElementById("overlayRole").textContent = user.role || "User";
+        document.getElementById("overlayAvatar").textContent = (user.name || "U")[0].toUpperCase();
+        
+        const history = getHistory();
+        document.getElementById("statTotalScans").textContent = history.length;
+        document.getElementById("welcomeText").textContent = `Welcome, ${user.name}. Paste text and click “Check for plagiarism” to generate a similarity report.`;
+      }
+
+      function renderHistory() {
+        const history = getHistory();
+        if (!history.length) {
+          scanHistoryEl.innerHTML = '<span class="empty-msg">No past scans yet.</span>';
+          return;
+        }
+        scanHistoryEl.innerHTML = history
+          .map((h, idx) => {
+            const dateStr = new Date(h.date).toLocaleDateString();
+            const riskClass = riskClassFromScore(h.similarity / 100);
+            return `<div class="history-item-mini" onclick="restoreScan(${idx}, event)">
+                <div style="flex: 1; overflow: hidden">
+                  <div style="font-size: 0.78rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(h.text)}</div>
+                  <div style="font-size: 0.65rem; color: rgba(245, 245, 245, 0.4); margin-top: 0.1rem">${dateStr}</div>
+                </div>
+                <div class="pill ${riskClass}" style="font-weight: 700; min-width: 45px; font-size: 0.65rem; padding: 0.1rem 0.4rem; justify-content: center">${h.similarity}%</div>
+              </div>`;
+          })
+          .join("");
+      }
+
+      window.restoreScan = function(idx, event) {
+        if (event) event.stopPropagation();
+        const history = getHistory();
+        const scan = history[idx];
+        if (!scan) return;
+        textInput.value = scan.text;
+        updateCharCount();
+        scanBtn.click();
+        profileOverlay.style.display = "none";
+      };
+
+      // Event Listeners
+      userProfile.addEventListener("click", () => {
+        profileOverlay.style.display = "flex";
+        renderHistory();
+        document.getElementById("statTotalScans").textContent = getHistory().length;
+      });
+
+      closeProfileBtn.addEventListener("click", () => {
+        profileOverlay.style.display = "none";
+      });
+
+      profileOverlay.addEventListener("click", (e) => {
+        if (e.target === profileOverlay) {
+          profileOverlay.style.display = "none";
+        }
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        localStorage.removeItem(CURRENT_KEY);
+        window.location.href = "./index.html";
+      });
+
+      clearHistoryBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setHistory([]);
+        renderHistory();
+        document.getElementById("statTotalScans").textContent = "0";
+      });
+
+      const builtInSources = [
+        {
+          id: "sample-1",
+          title: "Academic integrity guidelines (sample)",
+          text:
+            "Academic integrity requires that students submit original work. Plagiarism includes copying ideas or text without proper attribution.",
+        },
+        {
+          id: "sample-2",
+          title: "Code similarity overview (sample)",
+          text:
+            "Detecting similarity manually is difficult and time consuming. Automated systems analyze patterns and structure to report potential plagiarism.",
+        },
+      ];
+
+      function normalizeText(text) {
+        return (text || "")
+          .replace(/\r\n/g, "\n")
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function words(text) {
+        const t = normalizeText(text);
+        return t ? t.split(" ") : [];
+      }
+
+      function shingles(tokens, size = 5) {
+        const set = new Set();
+        for (let i = 0; i + size <= tokens.length; i++) {
+          set.add(tokens.slice(i, i + size).join(" "));
+        }
+        return set;
+      }
+
+      function jaccard(a, b) {
+        if (!a.size || !b.size) return 0;
+        let inter = 0;
+        for (const x of a) if (b.has(x)) inter++;
+        const uni = a.size + b.size - inter;
+        return uni ? inter / uni : 0;
+      }
+
+      function sentenceSplit(text) {
+        const raw = (text || "").replace(/\r\n/g, "\n").trim();
+        if (!raw) return [];
+        // Keep it simple and robust for many inputs
+        return raw
+          .split(/(?<=[.!?])\s+|\n{2,}/g)
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+
+      function scoreSentence(sentence, sourceShingles, size = 5) {
+        const sSet = shingles(words(sentence), size);
+        return jaccard(sSet, sourceShingles);
+      }
+
+      function updateCharCount() {
+        charCount.textContent = `${(textInput.value || "").length} chars`;
+      }
+
+      updateCharCount();
+      textInput.addEventListener("input", updateCharCount);
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        textInput.value = text;
+        updateCharCount();
+      });
+
+      saveBtn.addEventListener("click", () => {
+        const raw = (textInput.value || "").trim();
+        if (!raw) return;
+        const lib = getLibrary();
+        lib.unshift({
+          id: `lib-${Date.now()}`,
+          title: `Saved text • ${new Date().toLocaleString()}`,
+          text: raw,
+        });
+        setLibrary(lib.slice(0, 30));
+        scoreNoteEl.textContent = "Saved to your local library.";
+      });
+
+      clearLibBtn.addEventListener("click", () => {
+        setLibrary([]);
+        scoreNoteEl.textContent = "Library cleared.";
+      });
+
+      function riskClassFromScore(s) {
+        if (s > 0.7) return "mark-hi";
+        if (s >= 0.4) return "mark-med";
+        return "mark-lo";
+      }
+
+      scanBtn.addEventListener("click", () => {
+        const inputRaw = (textInput.value || "").trim();
+        if (!inputRaw) return;
+
+        const sources = [...builtInSources, ...getLibrary()];
+        const inputTokens = words(inputRaw);
+        const inputSet = shingles(inputTokens, 5);
+
+        const scoredSources = sources
+          .map((src) => {
+            const srcSet = shingles(words(src.text), 5);
+            const sim = jaccard(inputSet, srcSet);
+            return { ...src, sim, srcSet };
+          })
+          .sort((a, b) => b.sim - a.sim)
+          .slice(0, 5);
+
+        const top = scoredSources[0];
+        const overall = top ? top.sim : 0;
+        const percent = Math.round(overall * 100);
+
+        scoreEl.textContent = `${percent}%`;
+        scoreNoteEl.textContent =
+          percent >= 70
+            ? "High similarity detected. Review highlighted segments."
+            : percent >= 40
+            ? "Moderate similarity detected. Consider revising or adding citations."
+            : "Low similarity detected. Content appears mostly original.";
+
+        // Store scan result in history
+        const history = getHistory();
+        history.unshift({
+          text: inputRaw,
+          similarity: percent,
+          date: new Date().toISOString(),
+        });
+        setHistory(history.slice(0, 10)); // Keep last 10 scans
+        renderHistory();
+
+        sourcesEl.innerHTML = scoredSources.length
+          ? scoredSources
+              .map((s) => {
+                const p = Math.round(s.sim * 100);
+                return `<div class="pill" style="justify-content: space-between; gap: 0.8rem">
+                  <span style="max-width: 70%; overflow:hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(
+                    s.title
+                  )}</span>
+                  <strong style="letter-spacing: 0.06em">${p}%</strong>
+                </div>`;
+              })
+              .join("")
+          : `<div style="color: rgba(245,245,245,0.6)">—</div>`;
+
+        // Highlight report: sentence-level max similarity against top sources
+        const sentences = sentenceSplit(inputRaw);
+        if (!sentences.length || !top) {
+          reportEl.innerHTML = `<span style="color: rgba(245,245,245,0.6)">Not enough text to analyze.</span>`;
+          return;
+        }
+
+        const topSets = scoredSources.map((s) => s.srcSet);
+        const highlighted = sentences
+          .map((sent) => {
+            let best = 0;
+            for (const set of topSets) {
+              const sc = scoreSentence(sent, set, 5);
+              if (sc > best) best = sc;
+            }
+            const cls = riskClassFromScore(best);
+            return `<span class="${cls}">${escapeHtml(sent)}</span>`;
+          })
+          .join(" ");
+
+        reportEl.innerHTML = highlighted;
+      });
+
+      // Initial render
+      renderHistory();
+    </script>
+  </body>
+</html>
+

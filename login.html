@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log in – CodeTrace</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div
+      class="background"
+      style="background-image: url('./image2.png'); background-size: cover; background-position: center;"
+    ></div>
+    <div class="overlay"></div>
+
+    <main class="form-wrapper">
+      <div class="auth-layout">
+        <aside class="auth-visual" id="authVisual">
+          <div class="auth-visual-content">
+            <div class="title-group" id="authLogoGroup">
+              <img src="./Logo.png" class="logo-img" alt="Logo" />
+              <div class="title-text">
+                <div class="codetrace-title">
+                  <div class="text-row">
+                    <span class="code">Code</span><span class="trace">Trace</span>
+                    <div class="reflection">CodeTrace</div>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+            <div class="side-panel parallax-item" id="authCopy">
+              <h2>What is CodeTrace?</h2>
+              <p class="content-main">
+                CodeTrace analyzes source code to find structural and logical similarities between
+                different submissions. It helps detect copied or slightly modified programs that are hard to catch
+                manually.
+              </p>
+              <p class="content-main" style="margin-top: 0.6rem;">
+                By comparing patterns across assignments, the system highlights suspicious matches so instructors and
+                students can review and maintain academic integrity with confidence.
+              </p>
+            </div>
+          </div>
+          <p class="auth-visual-footer" id="authFooter"></p>
+        </aside>
+
+        <section class="auth-main">
+          <div class="form-top-nav">
+            <a href="./index.html">&#8592; Back to overview</a>
+          </div>
+          <header class="form-header">
+            <div>
+              <h1>Welcome back</h1>
+              <p>Log in to continue checking and tracking your submissions.</p>
+            </div>
+          </header>
+
+          <form>
+            <div class="form-group">
+              <label for="identifier">Email or Username</label>
+              <input type="text" id="identifier" name="identifier" placeholder="you@example.com or alexj" required />
+            </div>
+
+            <div class="form-group">
+              <label for="role">User type</label>
+              <input
+                type="text"
+                id="role"
+                name="role"
+                list="roleOptions"
+                placeholder="Student / Instructor"
+                required
+              />
+              <datalist id="roleOptions">
+                <option value="Student"></option>
+                <option value="Instructor"></option>
+              </datalist>
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="input-with-icon">
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  class="with-trailing-icon"
+                  placeholder="••••••••"
+                  required
+                />
+                <button type="button" class="icon-btn" id="togglePassword" aria-label="Toggle password visibility">
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 12s3.8-7 10-7 10 7 10 7-3.8 7-10 7S2 12 2 12Z"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    />
+                    <path
+                      d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.8rem">
+              Log in
+            </button>
+
+            <div id="error" class="error-text" role="alert" aria-live="polite" style="display: none"></div>
+
+            <div class="form-footer">
+              <a href="./forgotpassword.html">Forgot password?</a>
+              <span></span>
+            </div>
+
+            <div class="form-footer" style="margin-top: 0.6rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem">
+              <span>New here?</span>
+              <a href="./signup.html">Create an account</a>
+            </div>
+
+            <!-- bottom back link removed; now in top-left nav -->
+          </form>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const USERS_KEY = "cpc_users";
+      const CURRENT_KEY = "cpc_currentUser";
+
+      function getUsers() {
+        try {
+          const raw = localStorage.getItem(USERS_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch {
+          return [];
+        }
+      }
+
+      function setCurrentUser(user) {
+        localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
+      }
+
+      const passwordInput = document.getElementById("password");
+      const togglePassword = document.getElementById("togglePassword");
+      togglePassword.addEventListener("click", () => {
+        const nextType = passwordInput.type === "password" ? "text" : "password";
+        passwordInput.type = nextType;
+      });
+
+      const form = document.querySelector("form");
+      const errorEl = document.getElementById("error");
+
+      function showError(message) {
+        errorEl.textContent = message;
+        errorEl.style.display = "block";
+      }
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        errorEl.style.display = "none";
+
+        const identifier = document.getElementById("identifier").value.trim().toLowerCase();
+        const role = document.getElementById("role").value.trim().toLowerCase();
+        const password = passwordInput.value;
+
+        const users = getUsers();
+        const user = users.find((u) => {
+          const email = (u.email || "").toLowerCase();
+          const username = (u.username || "").toLowerCase();
+          const userRole = (u.role || "").toLowerCase();
+          const matchesId = identifier === email || identifier === username;
+          const matchesRole = role === userRole;
+          return matchesId && matchesRole;
+        });
+
+        if (!user || user.password !== password) {
+          showError("Invalid credentials. Please check your details.");
+          return;
+        }
+
+        setCurrentUser({ name: user.name, email: user.email, username: user.username, role: user.role });
+        window.location.href = "./main.html";
+      });
+
+      // Parallax mouse effects for sidebar
+      const visual = document.getElementById("authVisual");
+      const parallaxItems = [document.getElementById("authCopy")];
+
+      function handleMouseMove(e) {
+        const rect = visual.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const normX = (x / rect.width - 0.5) * -1;
+        const normY = (y / rect.height - 0.5) * -1;
+
+        const maxShift = 18;
+        const bgShift = 10;
+        const shiftX = normX * maxShift;
+        const shiftY = normY * maxShift;
+
+        parallaxItems.forEach((el, index) => {
+          if (!el) return;
+          const depth = 1 + index * 0.3;
+          el.style.setProperty("--shift-x", `${shiftX / depth}px`);
+          el.style.setProperty("--shift-y", `${shiftY / depth}px`);
+        });
+
+        visual.style.setProperty("--bg-shift-x", `${normX * bgShift}px`);
+        visual.style.setProperty("--bg-shift-y", `${normY * bgShift}px`);
+      }
+
+      if (visual) {
+        visual.addEventListener("mousemove", handleMouseMove);
+      }
+    </script>
+  </body>
+</html>
+
