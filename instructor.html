@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instructor Panel – CodeTrace</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      .instructor-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin-top: 1rem;
+      }
+      .analysis-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 0.8rem;
+        margin-top: 1rem;
+      }
+      .analysis-table th {
+        text-align: left;
+        padding: 0 1rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .analysis-table td {
+        padding: 1.2rem 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        color: #fff;
+        font-size: 0.9rem;
+      }
+      .analysis-table td:first-child {
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+        border-top-left-radius: 16px;
+        border-bottom-left-radius: 16px;
+      }
+      .analysis-table td:last-child {
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+        border-top-right-radius: 16px;
+        border-bottom-right-radius: 16px;
+      }
+      .similarity-badge {
+        font-weight: 700;
+        padding: 0.3rem 0.8rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+      }
+      .high-risk { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); }
+      .med-risk { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+      .low-risk { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+      
+      .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: rgba(255, 255, 255, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="background" style="background-image: url('./image3.png'); background-size: cover; background-position: center;"></div>
+    <div class="overlay"></div>
+
+    <main class="dashboard">
+      <header class="header-row" style="gap: 1rem">
+        <div class="title-group">
+          <img src="./lock.png" class="logo-img" alt="Logo" />
+          <div class="title-text">
+            <div class="codetrace-title">
+              <div class="text-row">
+                <span class="code">Code</span><span class="trace">Trace</span>
+                <div class="reflection">CodeTrace</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-actions">
+          <a href="./main.html" class="btn btn-ghost" style="font-size: 0.8rem">Dashboard</a>
+          <button class="btn btn-primary" id="logoutBtn" type="button">Log out</button>
+        </div>
+
+        <!-- Profile Full-Page Overlay (Same as main.html) -->
+        <div id="profileOverlay" class="profile-overlay" style="display: none;">
+          <div class="overlay-container" style="width: min(600px, 92vw); padding: 3rem;">
+            <button id="closeProfileBtn" class="close-overlay-btn">&times;</button>
+            <div class="overlay-content">
+              <div class="profile-header-large" style="gap: 2rem; margin-bottom: 2rem;">
+                <div class="profile-avatar x-large" id="overlayAvatar" style="width: 80px; height: 80px; font-size: 2rem; border-radius: 24px;"></div>
+                <div class="profile-details-large">
+                  <h1 id="overlayName" style="font-size: 1.8rem;"></h1>
+                  <p id="overlayEmail" style="font-size: 0.9rem;"></p>
+                  <div id="overlayRole" class="role-badge-large" style="padding: 0.3rem 1rem; font-size: 0.7rem;"></div>
+                </div>
+              </div>
+              <div class="overlay-grid" style="grid-template-columns: 1fr; gap: 2rem;">
+                <div class="overlay-section">
+                  <div class="section-header-row">
+                    <h2 class="overlay-section-title">Scan History</h2>
+                    <button class="btn btn-soft btn-sm" id="clearHistoryBtn" type="button">Clear</button>
+                  </div>
+                  <div id="scanHistory" class="overlay-history-list">
+                    <span class="empty-msg">No past scans yet.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section class="dash-card" style="margin-top: 1.5rem">
+        <div class="dash-card-inner">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap">
+            <div>
+              <div class="pill"><span class="badge-dot"></span> Bulk Analysis</div>
+              <h2 style="margin-top: 0.5rem; color: #fff; font-size: 1.2rem;">Cross-Check Student Submissions</h2>
+              <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem; margin-top: 0.2rem;">Analyze all stored code submissions to find matching logic and structural similarities.</p>
+            </div>
+            <button class="btn btn-primary" id="runBulkAnalysisBtn">Run Analysis</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="instructor-grid">
+        <section class="dash-card">
+          <div class="dash-card-inner">
+            <h2 class="overlay-section-title">Analysis Results</h2>
+            <div id="analysisContainer">
+              <div class="empty-state">
+                <p>No analysis run yet. Click "Run Analysis" to cross-check all submissions.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const CURRENT_KEY = "cpc_currentUser";
+      const LIB_KEY = "cpc_plagiarism_library";
+
+      function safeJsonParse(raw, fallback) {
+        try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
+      }
+
+      const user = safeJsonParse(localStorage.getItem(CURRENT_KEY), null);
+      if (!user || user.role.toLowerCase() !== 'instructor') {
+        window.location.replace("./main.html");
+      }
+
+      // User-specific history key
+      const USER_HISTORY_KEY = `cpc_history_${user ? user.username : 'guest'}`;
+
+      function getLibrary() { return safeJsonParse(localStorage.getItem(LIB_KEY), []); }
+      function getHistory() { return safeJsonParse(localStorage.getItem(USER_HISTORY_KEY), []); }
+      function setHistory(items) { localStorage.setItem(USER_HISTORY_KEY, JSON.stringify(items)); }
+
+      // Initialize UI
+      document.getElementById("profileName").textContent = user.name;
+      const initial = (user.name || "U")[0].toUpperCase();
+      document.getElementById("profileAvatar").textContent = initial;
+      document.getElementById("overlayName").textContent = user.name;
+      document.getElementById("overlayEmail").textContent = user.email || "No email provided";
+      document.getElementById("overlayRole").textContent = user.role;
+      document.getElementById("overlayAvatar").textContent = initial;
+
+      // Overlay toggle
+      const userProfile = document.getElementById("userProfile");
+      const profileOverlay = document.getElementById("profileOverlay");
+      const closeProfileBtn = document.getElementById("closeProfileBtn");
+
+      userProfile.addEventListener("click", () => {
+        profileOverlay.style.display = "flex";
+        renderHistory();
+      });
+
+      closeProfileBtn.addEventListener("click", () => profileOverlay.style.display = "none");
+      profileOverlay.addEventListener("click", (e) => { if (e.target === profileOverlay) profileOverlay.style.display = "none"; });
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem(CURRENT_KEY);
+        window.location.href = "./index.html";
+      });
+
+      // --- Analysis Logic ---
+      function normalizeText(text) {
+        return (text || "").toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, " ").replace(/\s+/g, " ").trim();
+      }
+
+      function shingles(text, size = 5) {
+        const tokens = normalizeText(text).split(" ");
+        const set = new Set();
+        for (let i = 0; i + size <= tokens.length; i++) {
+          set.add(tokens.slice(i, i + size).join(" "));
+        }
+        return set;
+      }
+
+      function jaccard(a, b) {
+        if (!a.size || !b.size) return 0;
+        let inter = 0;
+        for (const x of a) if (b.has(x)) inter++;
+        return inter / (a.size + b.size - inter);
+      }
+
+      const runBtn = document.getElementById("runBulkAnalysisBtn");
+      const container = document.getElementById("analysisContainer");
+
+      runBtn.addEventListener("click", () => {
+        const library = getLibrary().filter(item => item && item.text && typeof item.text === 'string');
+        if (library.length < 2) {
+          container.innerHTML = '<div class="empty-state"><p>Not enough valid submissions in the database to compare (minimum 2 required).</p></div>';
+          return;
+        }
+
+        runBtn.disabled = true;
+        runBtn.textContent = "Analyzing...";
+
+        setTimeout(() => {
+          try {
+            const results = [];
+            const shingleCache = library.map(item => shingles(item.text));
+
+            for (let i = 0; i < library.length; i++) {
+              for (let j = i + 1; j < library.length; j++) {
+                const sim = jaccard(shingleCache[i], shingleCache[j]);
+                results.push({
+                  a: library[i].title,
+                  userA: library[i].userName || "Unknown Student",
+                  b: library[j].title,
+                  userB: library[j].userName || "Unknown Student",
+                  score: Math.round(sim * 100)
+                });
+              }
+            }
+
+            results.sort((a, b) => b.score - a.score);
+
+            let html = `
+              <table class="analysis-table">
+                <thead>
+                  <tr>
+                    <th>Student A</th>
+                    <th>Student B</th>
+                    <th>Similarity</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+
+            results.forEach(res => {
+              const riskClass = res.score > 70 ? 'high-risk' : res.score >= 40 ? 'med-risk' : 'low-risk';
+              const status = res.score > 70 ? 'CRITICAL' : res.score >= 40 ? 'WARNING' : 'CLEAR';
+              html += `
+                <tr>
+                  <td>
+                    <div style="font-weight: 700; color: #fff;">${res.userA}</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${res.a}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 700; color: #fff;">${res.userB}</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${res.b}</div>
+                  </td>
+                  <td><span class="similarity-badge ${riskClass}">${res.score}%</span></td>
+                  <td style="font-weight: 700; font-size: 0.75rem; color: ${res.score > 70 ? '#ef4444' : res.score >= 40 ? '#f59e0b' : '#10b981'}">${status}</td>
+                </tr>
+              `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+          } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="empty-state"><p>Analysis failed: ${err.message}</p></div>`;
+          } finally {
+            runBtn.disabled = false;
+            runBtn.textContent = "Run Analysis";
+          }
+        }, 800);
+      });
+
+      function renderHistory() {
+        const history = getHistory();
+        const scanHistoryEl = document.getElementById("scanHistory");
+        if (!history.length) {
+          scanHistoryEl.innerHTML = '<span class="empty-msg">No past scans yet.</span>';
+          return;
+        }
+        scanHistoryEl.innerHTML = history.map((h, idx) => {
+          const riskClass = h.similarity > 70 ? 'mark-hi' : h.similarity >= 40 ? 'mark-med' : 'mark-lo';
+          return `<div class="history-item-mini" style="padding: 1rem;">
+            <div style="flex: 1; overflow: hidden">
+              <div style="font-size: 0.8rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${h.text}</div>
+              <div style="font-size: 0.65rem; color: rgba(245, 245, 245, 0.4); margin-top: 0.2rem">${new Date(h.date).toLocaleDateString()}</div>
+            </div>
+            <div class="pill ${riskClass}" style="font-weight: 700; min-width: 45px; font-size: 0.7rem; justify-content: center">${h.similarity}%</div>
+          </div>`;
+        }).join("");
+      }
+    </script>
+  </body>
+</html>

@@ -16,7 +16,7 @@
     <main class="dashboard">
       <header class="header-row" style="gap: 1rem">
         <div class="title-group">
-          <img src="./Logo.png" class="logo-img" alt="Logo" />
+          <img src="./lock.png" class="logo-img" alt="Logo" />
           <div class="title-text">
             <div class="codetrace-title">
               <div class="text-row">
@@ -34,6 +34,7 @@
               <span id="profileName" class="profile-name"></span>
             </div>
           </div>
+          <a id="instructorLink" href="./instructor.html" class="btn btn-ghost" style="display: none; font-size: 0.8rem">Instructor Panel</a>
           <button class="btn btn-primary" id="logoutBtn" type="button">Log out</button>
         </div>
 
@@ -43,12 +44,25 @@
             <button id="closeProfileBtn" class="close-overlay-btn">&times;</button>
             
             <div class="overlay-content">
-              <div class="profile-header-large">
+              <div class="profile-header-large" style="position: relative;">
                 <div class="profile-avatar x-large" id="overlayAvatar"></div>
-                <div class="profile-details-large">
+                <div class="profile-details-large" id="profileDisplay">
                   <h1 id="overlayName"></h1>
                   <p id="overlayEmail"></p>
                   <div id="overlayRole" class="role-badge-large"></div>
+                  <button class="btn btn-soft btn-xs" id="editProfileBtn" style="margin-top: 1rem;">Edit Profile</button>
+                </div>
+                
+                <!-- Edit Form (Hidden by default) -->
+                <div class="profile-details-large" id="profileEditForm" style="display: none; width: 100%;">
+                  <div style="display: grid; gap: 0.6rem; width: fit-content;">
+                    <input type="text" id="editName" class="text-area" style="min-height: auto; height: auto; padding: 0.5rem 0.8rem; font-size: 0.85rem; width: 220px;" placeholder="Your Name">
+                    <input type="email" id="editEmail" class="text-area" style="min-height: auto; height: auto; padding: 0.5rem 0.8rem; font-size: 0.85rem; width: 220px;" placeholder="Your Email">
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.2rem;">
+                      <button class="btn btn-primary btn-sm" id="saveProfileBtn" style="padding: 0.4rem 1rem; font-size: 0.75rem;">Save</button>
+                      <button class="btn btn-ghost btn-sm" id="cancelEditBtn" style="padding: 0.4rem 1rem; font-size: 0.75rem;">Cancel</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -58,7 +72,7 @@
                     <h2 class="overlay-section-title">Scan History</h2>
                     <button class="btn btn-soft btn-sm" id="clearHistoryBtn" type="button">Clear History</button>
                   </div>
-                  <div id="scanHistory" class="overlay-history-list">
+                  <div id="scanHistory" class="overlay-history-list" style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem; display: block;">
                     <span class="empty-msg">No past scans yet.</span>
                   </div>
                 </div>
@@ -131,24 +145,25 @@
 
         .overlay-container {
           position: relative;
-          width: min(1000px, 92vw);
+          width: min(600px, 92vw);
           max-height: 90vh;
           background: linear-gradient(135deg, rgba(20, 22, 28, 0.8), rgba(10, 12, 16, 0.9));
           border: 1px solid rgba(255, 255, 255, 0.12);
-          border-radius: 40px;
-          padding: 4rem;
+          border-radius: 32px;
+          padding: 3rem;
           overflow-y: auto;
+          overflow-x: hidden;
           box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
         }
 
         .close-overlay-btn {
           position: absolute;
-          top: 2rem;
-          right: 2.5rem;
+          top: 1.5rem;
+          right: 2rem;
           background: none;
           border: none;
           color: rgba(255, 255, 255, 0.4);
-          font-size: 3rem;
+          font-size: 2.5rem;
           cursor: pointer;
           transition: color 0.2s ease, transform 0.2s ease;
         }
@@ -161,16 +176,16 @@
         .profile-header-large {
           display: flex;
           align-items: center;
-          gap: 3rem;
-          margin-bottom: 4rem;
+          gap: 2rem;
+          margin-bottom: 2.5rem;
         }
 
         .profile-avatar.x-large {
-          width: 120px;
-          height: 120px;
-          font-size: 3rem;
+          width: 80px;
+          height: 80px;
+          font-size: 2rem;
           background: linear-gradient(135deg, #5be7ff, #2b7cff);
-          border-radius: 40px;
+          border-radius: 24px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -179,23 +194,24 @@
         }
 
         .profile-details-large h1 {
-          font-size: 2.5rem;
+          font-size: 1.8rem;
           letter-spacing: -0.02em;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.3rem;
         }
 
         .profile-details-large p {
-          font-size: 1.1rem;
+          font-size: 0.9rem;
           color: rgba(245, 245, 245, 0.5);
-          margin-bottom: 1.2rem;
+          margin-bottom: 0.8rem;
+          word-break: break-all;
         }
 
         .role-badge-large {
           display: inline-block;
-          font-size: 0.8rem;
+          font-size: 0.7rem;
           text-transform: uppercase;
           letter-spacing: 0.15em;
-          padding: 0.5rem 1.2rem;
+          padding: 0.3rem 1rem;
           background: rgba(91, 231, 255, 0.1);
           color: #5be7ff;
           border-radius: 999px;
@@ -204,8 +220,8 @@
 
         .overlay-grid {
           display: grid;
-          grid-template-columns: 1.5fr 1fr;
-          gap: 4rem;
+          grid-template-columns: 1fr;
+          gap: 2.5rem;
         }
 
         .overlay-section-title {
@@ -360,8 +376,7 @@
     <script>
       const CURRENT_KEY = "cpc_currentUser";
       const LIB_KEY = "cpc_plagiarism_library";
-      const HISTORY_KEY = "cpc_scan_history";
-
+      
       function safeJsonParse(raw, fallback) {
         try {
           return raw ? JSON.parse(raw) : fallback;
@@ -374,6 +389,14 @@
         return safeJsonParse(localStorage.getItem(CURRENT_KEY), null);
       }
 
+      const user = getCurrentUser();
+      if (!user) {
+        window.location.replace("./index.html");
+      }
+
+      // User-specific history key
+      const USER_HISTORY_KEY = `cpc_history_${user ? user.username : 'guest'}`;
+
       function getLibrary() {
         return safeJsonParse(localStorage.getItem(LIB_KEY), []);
       }
@@ -383,11 +406,11 @@
       }
 
       function getHistory() {
-        return safeJsonParse(localStorage.getItem(HISTORY_KEY), []);
+        return safeJsonParse(localStorage.getItem(USER_HISTORY_KEY), []);
       }
 
       function setHistory(items) {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+        localStorage.setItem(USER_HISTORY_KEY, JSON.stringify(items));
       }
 
       function escapeHtml(str) {
@@ -405,11 +428,6 @@
         return "mark-lo";
       }
 
-      const user = getCurrentUser();
-      if (!user) {
-        window.location.replace("./index.html");
-      }
-
       // DOM Elements
       const profileOverlay = document.getElementById("profileOverlay");
       const userProfile = document.getElementById("userProfile");
@@ -417,6 +435,16 @@
       const logoutBtn = document.getElementById("logoutBtn");
       const scanHistoryEl = document.getElementById("scanHistory");
       const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+      
+      // Edit Profile Elements
+      const editProfileBtn = document.getElementById("editProfileBtn");
+      const saveProfileBtn = document.getElementById("saveProfileBtn");
+      const cancelEditBtn = document.getElementById("cancelEditBtn");
+      const profileDisplay = document.getElementById("profileDisplay");
+      const profileEditForm = document.getElementById("profileEditForm");
+      const editNameInput = document.getElementById("editName");
+      const editEmailInput = document.getElementById("editEmail");
+
       const textInput = document.getElementById("textInput");
       const charCount = document.getElementById("charCount");
       const fileInput = document.getElementById("fileInput");
@@ -431,7 +459,12 @@
       // Initialize UI with User Data
       if (user) {
         document.getElementById("profileName").textContent = user.name;
-        document.getElementById("dropdownAvatar")?.textContent || (document.getElementById("profileAvatar").textContent = (user.name || "U")[0].toUpperCase());
+        document.getElementById("profileAvatar").textContent = (user.name || "U")[0].toUpperCase();
+        
+        // Show instructor link if applicable
+        if (user.role && user.role.toLowerCase() === 'instructor') {
+          document.getElementById("instructorLink").style.display = "inline-flex";
+        }
         
         // Overlay elements
         document.getElementById("overlayName").textContent = user.name;
@@ -454,9 +487,11 @@
           .map((h, idx) => {
             const dateStr = new Date(h.date).toLocaleDateString();
             const riskClass = riskClassFromScore(h.similarity / 100);
-            return `<div class="history-item-mini" onclick="restoreScan(${idx}, event)">
+            // Display only a short preview of the text
+            const previewText = h.text.length > 60 ? h.text.substring(0, 60) + "..." : h.text;
+            return `<div class="history-item-mini" onclick="restoreScan(${idx}, event)" style="margin-bottom: 0.5rem;">
                 <div style="flex: 1; overflow: hidden">
-                  <div style="font-size: 0.78rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(h.text)}</div>
+                  <div style="font-size: 0.78rem; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${escapeHtml(previewText)}</div>
                   <div style="font-size: 0.65rem; color: rgba(245, 245, 245, 0.4); margin-top: 0.1rem">${dateStr}</div>
                 </div>
                 <div class="pill ${riskClass}" style="font-weight: 700; min-width: 45px; font-size: 0.65rem; padding: 0.1rem 0.4rem; justify-content: center">${h.similarity}%</div>
@@ -477,6 +512,49 @@
       };
 
       // Event Listeners
+      editProfileBtn.addEventListener("click", () => {
+        editNameInput.value = user.name;
+        editEmailInput.value = user.email || "";
+        profileDisplay.style.display = "none";
+        profileEditForm.style.display = "block";
+      });
+
+      cancelEditBtn.addEventListener("click", () => {
+        profileDisplay.style.display = "block";
+        profileEditForm.style.display = "none";
+      });
+
+      saveProfileBtn.addEventListener("click", () => {
+        const newName = editNameInput.value.trim();
+        const newEmail = editEmailInput.value.trim();
+        
+        if (newName) {
+          user.name = newName;
+          user.email = newEmail;
+          
+          // Update global user storage (simulated update)
+          const users = safeJsonParse(localStorage.getItem("cpc_users"), []);
+          const uIdx = users.findIndex(u => u.username === user.username);
+          if (uIdx !== -1) {
+            users[uIdx].name = newName;
+            users[uIdx].email = newEmail;
+            localStorage.setItem("cpc_users", JSON.stringify(users));
+          }
+          
+          localStorage.setItem(CURRENT_KEY, JSON.stringify(user));
+          
+          // Update UI
+          document.getElementById("profileName").textContent = user.name;
+          document.getElementById("overlayName").textContent = user.name;
+          document.getElementById("overlayEmail").textContent = user.email || "No email provided";
+          document.getElementById("profileAvatar").textContent = (user.name || "U")[0].toUpperCase();
+          document.getElementById("overlayAvatar").textContent = (user.name || "U")[0].toUpperCase();
+          
+          profileDisplay.style.display = "block";
+          profileEditForm.style.display = "none";
+        }
+      });
+
       userProfile.addEventListener("click", () => {
         profileOverlay.style.display = "flex";
         renderHistory();
@@ -587,6 +665,7 @@
         lib.unshift({
           id: `lib-${Date.now()}`,
           title: `Saved text • ${new Date().toLocaleString()}`,
+          userName: user.name, // Store user name for instructor comparison
           text: raw,
         });
         setLibrary(lib.slice(0, 30));
