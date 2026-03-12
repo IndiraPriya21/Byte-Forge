@@ -177,8 +177,20 @@ app.post("/api/library", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    // Attempt to resolve user name for better instructor display
+    let userName = "Unknown Student";
+    try {
+      const userDoc = await usersCollection.doc(userId).get();
+      if (userDoc.exists) {
+        userName = userDoc.data().name || userName;
+      }
+    } catch {
+      // ignore
+    }
+
     const newItem = {
       userId,
+      userName,
       title,
       text,
       createdAt: new Date().toISOString(),

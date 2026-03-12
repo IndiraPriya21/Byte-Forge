@@ -446,6 +446,34 @@
         });
       }
 
+      async function fetchLibraryFromBackend() {
+        if (!user || !user.id) return;
+        try {
+          const res = await fetch(`http://localhost:5000/api/library?userId=${encodeURIComponent(user.id)}`);
+          if (!res.ok) return;
+          const items = await res.json();
+          if (Array.isArray(items)) {
+            setLibrary(items);
+          }
+        } catch (err) {
+          console.warn("Failed to load library from backend:", err);
+        }
+      }
+
+      async function fetchScansFromBackend() {
+        if (!user || !user.id) return;
+        try {
+          const res = await fetch(`http://localhost:5000/api/scans?userId=${encodeURIComponent(user.id)}`);
+          if (!res.ok) return;
+          const scans = await res.json();
+          if (Array.isArray(scans)) {
+            setHistory(scans.map((s) => ({ text: s.text, similarity: s.similarity, date: s.createdAt })));
+          }
+        } catch (err) {
+          console.warn("Failed to load scans from backend:", err);
+        }
+      }
+
       function escapeHtml(str) {
         return (str || "")
           .replaceAll("&", "&amp;")
@@ -508,6 +536,12 @@
         const history = getHistory();
         document.getElementById("statTotalScans").textContent = history.length;
         document.getElementById("welcomeText").textContent = `Welcome, ${user.name}. Paste text and click “Check for plagiarism” to generate a similarity report.`;
+
+        // Sync with backend and update UI
+        (async () => {
+          await Promise.all([fetchLibraryFromBackend(), fetchScansFromBackend()]);
+          document.getElementById("statTotalScans").textContent = getHistory().length;
+        })();
       }
 
       function renderHistory() {

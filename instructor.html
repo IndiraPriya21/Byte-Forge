@@ -160,6 +160,34 @@
       function getHistory() { return safeJsonParse(localStorage.getItem(USER_HISTORY_KEY), []); }
       function setHistory(items) { localStorage.setItem(USER_HISTORY_KEY, JSON.stringify(items)); }
 
+      async function fetchLibraryFromBackend() {
+        if (!user) return;
+        try {
+          const res = await fetch("http://localhost:5000/api/library");
+          if (!res.ok) return;
+          const items = await res.json();
+          if (Array.isArray(items)) {
+            localStorage.setItem(LIB_KEY, JSON.stringify(items));
+          }
+        } catch (err) {
+          console.warn("Failed to load library from backend:", err);
+        }
+      }
+
+      async function fetchScansFromBackend() {
+        if (!user) return;
+        try {
+          const res = await fetch("http://localhost:5000/api/scans");
+          if (!res.ok) return;
+          const scans = await res.json();
+          if (Array.isArray(scans)) {
+            setHistory(scans.map((s) => ({ text: s.text, similarity: s.similarity, date: s.createdAt })));
+          }
+        } catch (err) {
+          console.warn("Failed to load scans from backend:", err);
+        }
+      }
+
       // Initialize UI
       document.getElementById("profileName").textContent = user.name;
       const initial = (user.name || "U")[0].toUpperCase();
@@ -168,6 +196,10 @@
       document.getElementById("overlayEmail").textContent = user.email || "No email provided";
       document.getElementById("overlayRole").textContent = user.role;
       document.getElementById("overlayAvatar").textContent = initial;
+
+      (async () => {
+        await Promise.all([fetchLibraryFromBackend(), fetchScansFromBackend()]);
+      })();
 
       // Overlay toggle
       const userProfile = document.getElementById("userProfile");
@@ -211,7 +243,10 @@
       const runBtn = document.getElementById("runBulkAnalysisBtn");
       const container = document.getElementById("analysisContainer");
 
-      runBtn.addEventListener("click", () => {
+      runBtn.addEventListener("click", async () => {
+        // Refresh library from backend before running analysis
+        await fetchLibraryFromBackend();
+
         const library = getLibrary().filter(item => item && item.text && typeof item.text === 'string');
         if (library.length < 2) {
           container.innerHTML = '<div class="empty-state"><p>Not enough valid submissions in the database to compare (minimum 2 required).</p></div>';
