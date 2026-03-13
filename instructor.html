@@ -81,7 +81,6 @@
 
         <div class="nav-actions">
           <a href="./main.html" class="btn btn-ghost" style="font-size: 0.8rem">Dashboard</a>
-          <button class="btn btn-primary" id="logoutBtn" type="button">Log out</button>
         </div>
 
         <!-- Profile Full-Page Overlay (Same as main.html) -->
@@ -121,7 +120,10 @@
               <h2 style="margin-top: 0.5rem; color: #fff; font-size: 1.2rem;">Cross-Check Student Submissions</h2>
               <p style="color: rgba(255, 255, 255, 0.5); font-size: 0.9rem; margin-top: 0.2rem;">Analyze all stored code submissions to find matching logic and structural similarities.</p>
             </div>
-            <button class="btn btn-primary" id="runBulkAnalysisBtn">Run Analysis</button>
+            <div style="display: flex; gap: 0.8rem;">
+              <button class="btn btn-soft" id="clearLibraryBtn">Clear Database</button>
+              <button class="btn btn-primary" id="runBulkAnalysisBtn">Run Analysis</button>
+            </div>
           </div>
         </div>
       </section>
@@ -152,6 +154,22 @@
       if (!user || user.role.toLowerCase() !== 'instructor') {
         window.location.replace("./main.html");
       }
+
+      // Initialize UI
+      const initial = (user.name || "U")[0].toUpperCase();
+      const profileName = document.getElementById("profileName");
+      const profileAvatar = document.getElementById("profileAvatar");
+      const overlayName = document.getElementById("overlayName");
+      const overlayEmail = document.getElementById("overlayEmail");
+      const overlayRole = document.getElementById("overlayRole");
+      const overlayAvatar = document.getElementById("overlayAvatar");
+      
+      if (profileName) profileName.textContent = user.name;
+      if (profileAvatar) profileAvatar.textContent = initial;
+      if (overlayName) overlayName.textContent = user.name;
+      if (overlayEmail) overlayEmail.textContent = user.email || "No email provided";
+      if (overlayRole) overlayRole.textContent = user.role;
+      if (overlayAvatar) overlayAvatar.textContent = initial;
 
       // User-specific history key
       const USER_HISTORY_KEY = `cpc_history_${user ? user.username : 'guest'}`;
@@ -188,44 +206,104 @@
         }
       }
 
-      // Initialize UI
-      document.getElementById("profileName").textContent = user.name;
-      const initial = (user.name || "U")[0].toUpperCase();
-      document.getElementById("profileAvatar").textContent = initial;
-      document.getElementById("overlayName").textContent = user.name;
-      document.getElementById("overlayEmail").textContent = user.email || "No email provided";
-      document.getElementById("overlayRole").textContent = user.role;
-      document.getElementById("overlayAvatar").textContent = initial;
+      async function fetchAnalysisFromBackend() {
+        if (!user) {
+          console.log("[ANALYSIS FETCH] No user logged in");
+          return [];
+        }
+        try {
+          const url = `http://localhost:5000/api/analysis?instructorId=${encodeURIComponent(user.id)}`;
+          console.log("[ANALYSIS FETCH] Fetching from:", url);
+          const res = await fetch(url);
+          
+          if (!res.ok) {
+            console.warn("[ANALYSIS FETCH] Failed with status:", res.status);
+            return [];
+          }
+          
+          const results = await res.json();
+          console.log(`[ANALYSIS FETCHED] Retrieved ${Array.isArray(results) ? results.length : 0} result(s)`, results);
+          return Array.isArray(results) ? results : [];
+        } catch (err) {
+          console.warn("[ANALYSIS FETCH ERROR]", err.message, err);
+          return [];
+        }
+      }
 
       (async () => {
         await Promise.all([fetchLibraryFromBackend(), fetchScansFromBackend()]);
+        
+        // On page load, check if there are any existing analysis results to display
+        const existingAnalysis = await fetchAnalysisFromBackend();
+        if (existingAnalysis && existingAnalysis.length > 0) {
+          console.log(`[PAGE LOAD] Found ${existingAnalysis.length} existing analysis result(s)`);
+          
+          let html = `
+            <table class="analysis-table">
+              <thead>
+                <tr>
+                  <th>First User</th>
+                  <th>Second User</th>
+                  <th>Matching Percentage</th>
+                  <th>Level</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          existingAnalysis.forEach(res => {
+            const riskClass = res.matchingPercentage > 70 ? 'high-risk' : res.matchingPercentage >= 40 ? 'med-risk' : 'low-risk';
+            const levelColor = res.matchingPercentage > 70 ? '#ef4444' : res.matchingPercentage >= 40 ? '#f59e0b' : '#10b981';
+            
+            html += `
+              <tr>
+                <td>
+                  <div style="font-weight: 700; color: #fff;">${escapeHtml(res.userA)}</div>
+                  <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${escapeHtml(res.submissionA)}</div>
+                </td>
+                <td>
+                  <div style="font-weight: 700; color: #fff;">${escapeHtml(res.userB)}</div>
+                  <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${escapeHtml(res.submissionB)}</div>
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <span class="similarity-badge ${riskClass}">${res.matchingPercentage}%</span>
+                  </div>
+                </td>
+                <td style="font-weight: 700; font-size: 0.85rem; color: ${levelColor}">${res.level}</td>
+              </tr>
+            `;
+          });
+
+          html += '</tbody></table>';
+          document.getElementById("analysisContainer").innerHTML = html;
+        }
       })();
 
       // Overlay toggle
-      const userProfile = document.getElementById("userProfile");
       const profileOverlay = document.getElementById("profileOverlay");
       const closeProfileBtn = document.getElementById("closeProfileBtn");
-
-      userProfile.addEventListener("click", () => {
-        profileOverlay.style.display = "flex";
-        renderHistory();
-      });
 
       closeProfileBtn.addEventListener("click", () => profileOverlay.style.display = "none");
       profileOverlay.addEventListener("click", (e) => { if (e.target === profileOverlay) profileOverlay.style.display = "none"; });
 
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        localStorage.removeItem(CURRENT_KEY);
-        window.location.href = "./index.html";
-      });
-
       // --- Analysis Logic ---
       function normalizeText(text) {
-        return (text || "").toLowerCase().replace(/[^\p{L}\p{N}\s]+/gu, " ").replace(/\s+/g, " ").trim();
+        return (text || "")
+          .replace(/\r\n/g, "\n")
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+          .replace(/\s+/g, " ")
+          .trim();
       }
 
-      function shingles(text, size = 5) {
-        const tokens = normalizeText(text).split(" ");
+      function words(text) {
+        const t = normalizeText(text);
+        return t ? t.split(" ") : [];
+      }
+
+      function shingles(text, size = 2) {
+        const tokens = words(text);
         const set = new Set();
         for (let i = 0; i + size <= tokens.length; i++) {
           set.add(tokens.slice(i, i + size).join(" "));
@@ -234,56 +312,244 @@
       }
 
       function jaccard(a, b) {
-        if (!a.size || !b.size) return 0;
+        if (!a || !b || !a.size || !b.size) return 0;
         let inter = 0;
         for (const x of a) if (b.has(x)) inter++;
-        return inter / (a.size + b.size - inter);
+        const uni = a.size + b.size - inter;
+        return uni ? inter / uni : 0;
+      }
+
+      // ============================================
+      // MOSS (Measure of Software Similarity) Algorithm
+      // Industry-standard for code plagiarism detection
+      // More effective than simple shingles for code
+      // ============================================
+      function computeFingerprints(tokens) {
+        const k = 2; // Window size for token n-grams (2-grams)
+        const fingerprints = new Set();
+        
+        // Use 2-grams for reliable matching
+        for (let i = 0; i + k <= tokens.length; i++) {
+          // Create shingle from k sequential tokens
+          const shingle = tokens.slice(i, i + k).join(" ");
+          // Hash the shingle using simple string hash
+          let hash = 0;
+          for (let j = 0; j < shingle.length; j++) {
+            hash = ((hash << 5) - hash + shingle.charCodeAt(j)) | 0;
+          }
+          fingerprints.add(hash);
+        }
+
+        // If too few tokens for 2-grams, use individual tokens as fallback
+        if (fingerprints.size === 0) {
+          for (const token of tokens) {
+            let hash = 0;
+            for (let j = 0; j < token.length; j++) {
+              hash = ((hash << 5) - hash + token.charCodeAt(j)) | 0;
+            }
+            fingerprints.add(hash);
+          }
+        }
+
+        return fingerprints;
+      }
+
+      function mossSimilarity(text1, text2) {
+        const tokens1 = words(text1);
+        const tokens2 = words(text2);
+        
+        if (tokens1.length === 0 || tokens2.length === 0) {
+          return 0;
+        }
+        
+        const fp1 = computeFingerprints(tokens1);
+        const fp2 = computeFingerprints(tokens2);
+        
+        // Count matching fingerprints
+        let matches = 0;
+        for (const hash of fp1) {
+          if (fp2.has(hash)) {
+            matches++;
+          }
+        }
+        
+        // Similarity based on Jaccard index: intersection / union
+        const union = new Set([...fp1, ...fp2]).size;
+        return union > 0 ? matches / union : 0;
       }
 
       const runBtn = document.getElementById("runBulkAnalysisBtn");
+      const clearLibBtn = document.getElementById("clearLibraryBtn");
       const container = document.getElementById("analysisContainer");
 
-      runBtn.addEventListener("click", async () => {
-        // Refresh library from backend before running analysis
-        await fetchLibraryFromBackend();
-
-        const library = getLibrary().filter(item => item && item.text && typeof item.text === 'string');
-        if (library.length < 2) {
-          container.innerHTML = '<div class="empty-state"><p>Not enough valid submissions in the database to compare (minimum 2 required).</p></div>';
-          return;
+      clearLibBtn.addEventListener("click", async () => {
+        if (!confirm("Are you sure you want to clear ALL student submissions from the database? This cannot be undone.")) return;
+        try {
+          const res = await fetch("http://localhost:5000/api/library", { method: "DELETE" });
+          if (res.ok) {
+            localStorage.setItem(LIB_KEY, "[]");
+            container.innerHTML = '<div class="empty-state"><p>Database cleared successfully.</p></div>';
+          }
+        } catch (err) {
+          alert("Failed to clear database: " + err.message);
         }
+      });
 
-        runBtn.disabled = true;
-        runBtn.textContent = "Analyzing...";
-
-        setTimeout(() => {
-          try {
-            const results = [];
-            const shingleCache = library.map(item => shingles(item.text));
-
-            for (let i = 0; i < library.length; i++) {
-              for (let j = i + 1; j < library.length; j++) {
-                const sim = jaccard(shingleCache[i], shingleCache[j]);
-                results.push({
-                  a: library[i].title,
-                  userA: library[i].userName || "Unknown Student",
-                  b: library[j].title,
-                  userB: library[j].userName || "Unknown Student",
-                  score: Math.round(sim * 100)
-                });
-              }
-            }
-
-            results.sort((a, b) => b.score - a.score);
-
+      runBtn.addEventListener("click", async () => {
+        try {
+          runBtn.disabled = true;
+          runBtn.textContent = "Checking for saved results...";
+          console.log("[RUN ANALYSIS] Starting analysis check...");
+          
+          // First, check if we already have saved analysis results in the database
+          const savedResults = await fetchAnalysisFromBackend();
+          console.log("[RUN ANALYSIS] Saved results found:", savedResults.length);
+          
+          if (savedResults && savedResults.length > 0) {
+            // Display the saved results
+            console.log("[RUN ANALYSIS] Displaying saved results");
+            runBtn.textContent = "Run Analysis";
+            runBtn.disabled = false;
+            
             let html = `
               <table class="analysis-table">
                 <thead>
                   <tr>
-                    <th>Student A</th>
-                    <th>Student B</th>
-                    <th>Similarity</th>
-                    <th>Status</th>
+                    <th>First User</th>
+                    <th>Second User</th>
+                    <th>Matching Percentage</th>
+                    <th>Level</th>
+                  </tr>
+                </thead>
+                <tbody>
+            `;
+
+            savedResults.forEach(res => {
+              const riskClass = res.matchingPercentage > 70 ? 'high-risk' : res.matchingPercentage >= 40 ? 'med-risk' : 'low-risk';
+              const levelColor = res.matchingPercentage > 70 ? '#ef4444' : res.matchingPercentage >= 40 ? '#f59e0b' : '#10b981';
+              
+              html += `
+                <tr>
+                  <td>
+                    <div style="font-weight: 700; color: #fff;">${escapeHtml(res.userA)}</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${escapeHtml(res.submissionA)}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 700; color: #fff;">${escapeHtml(res.userB)}</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${escapeHtml(res.submissionB)}</div>
+                  </td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                      <span class="similarity-badge ${riskClass}">${res.matchingPercentage}%</span>
+                    </div>
+                  </td>
+                  <td style="font-weight: 700; font-size: 0.85rem; color: ${levelColor}">${res.level}</td>
+                </tr>
+              `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+            return;
+          }
+          
+          // If no saved results, run new analysis
+          console.log("[RUN ANALYSIS] No saved results, running new analysis...");
+          runBtn.textContent = "Fetching Data...";
+          
+          // Force a fresh sync from the backend database
+          await fetchLibraryFromBackend();
+
+          const library = getLibrary().filter(item => item && item.text && typeof item.text === 'string' && item.text.trim().length > 10);
+          console.log("[RUN ANALYSIS] Library length:", library.length, library);
+
+          if (library.length < 2) {
+            console.warn("[RUN ANALYSIS] Not enough submissions. Need at least 2, got:", library.length);
+            container.innerHTML = `
+              <div class="empty-state">
+                <p>Not enough submissions found in the database to perform a cross-comparison.</p>
+                <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">Current valid submissions: ${library.length} (minimum 2 required)</p>
+              </div>`;
+            runBtn.textContent = "Run Analysis";
+            runBtn.disabled = false;
+            return;
+          }
+
+          runBtn.textContent = "Analyzing Patterns...";
+
+          // Short delay to show the status change
+          await new Promise(r => setTimeout(r, 400));
+
+          const results = [];
+          // Use MOSS algorithm for plagiarism detection
+          console.log("[RUN ANALYSIS] Using MOSS algorithm for similarity detection");
+
+          for (let i = 0; i < library.length; i++) {
+            for (let j = i + 1; j < library.length; j++) {
+              const sim = mossSimilarity(library[i].text, library[j].text);
+              // Only include results with some similarity or include all if needed
+              results.push({
+                a: library[i].title,
+                userA: library[i].userName || "Unknown Student",
+                b: library[j].title,
+                userB: library[j].userName || "Unknown Student",
+                score: Math.round(sim * 100)
+              });
+            }
+          }
+
+          // Sort by highest similarity first
+          results.sort((a, b) => b.score - a.score);
+          console.log("[RUN ANALYSIS] Calculated results:", results.length, results);
+
+          if (results.length === 0) {
+            console.warn("[RUN ANALYSIS] No results calculated");
+            container.innerHTML = '<div class="empty-state"><p>No similarity results could be calculated between the available submissions.</p></div>';
+            runBtn.textContent = "Run Analysis";
+            runBtn.disabled = false;
+            return;
+          }
+
+          runBtn.textContent = "Saving Results...";
+
+          // Save all results to the backend database
+          let savedCount = 0;
+          for (const res of results) {
+            try {
+              const response = await fetch("http://localhost:5000/api/analysis", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  instructorId: user.id,
+                  userA: res.userA,
+                  userB: res.userB,
+                  submissionA: res.a,
+                  submissionB: res.b,
+                  matchingPercentage: res.score,
+                  level: res.score > 70 ? 'High' : res.score >= 40 ? 'Medium' : 'Low'
+                })
+              });
+              if (response.ok) {
+                savedCount++;
+                console.log("[RUN ANALYSIS] Saved result:", res.userA, "vs", res.userB);
+              } else {
+                console.warn("[RUN ANALYSIS] Failed to save result:", res.userA, "vs", res.userB, response.status);
+              }
+            } catch (err) {
+              console.warn("[RUN ANALYSIS] Error saving to database:", err.message);
+            }
+          }
+          
+          console.log(`[RUN ANALYSIS] Saved ${savedCount}/${results.length} results to database`);
+
+          let html = `
+              <table class="analysis-table">
+                <thead>
+                  <tr>
+                    <th>First User</th>
+                    <th>Second User</th>
+                    <th>Matching Percentage</th>
+                    <th>Level</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -291,34 +557,53 @@
 
             results.forEach(res => {
               const riskClass = res.score > 70 ? 'high-risk' : res.score >= 40 ? 'med-risk' : 'low-risk';
-              const status = res.score > 70 ? 'CRITICAL' : res.score >= 40 ? 'WARNING' : 'CLEAR';
+              const levelLabel = res.score > 70 ? 'High' : res.score >= 40 ? 'Medium' : 'Low';
+              const levelColor = res.score > 70 ? '#ef4444' : res.score >= 40 ? '#f59e0b' : '#10b981';
+              
               html += `
                 <tr>
                   <td>
-                    <div style="font-weight: 700; color: #fff;">${res.userA}</div>
-                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${res.a}</div>
+                    <div style="font-weight: 700; color: #fff;">${escapeHtml(res.userA)}</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${escapeHtml(res.a)}</div>
                   </td>
                   <td>
-                    <div style="font-weight: 700; color: #fff;">${res.userB}</div>
-                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${res.b}</div>
+                    <div style="font-weight: 700; color: #fff;">${escapeHtml(res.userB)}</div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem;">${escapeHtml(res.b)}</div>
                   </td>
-                  <td><span class="similarity-badge ${riskClass}">${res.score}%</span></td>
-                  <td style="font-weight: 700; font-size: 0.75rem; color: ${res.score > 70 ? '#ef4444' : res.score >= 40 ? '#f59e0b' : '#10b981'}">${status}</td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 0.8rem;">
+                      <span class="similarity-badge ${riskClass}">${res.score}%</span>
+                    </div>
+                  </td>
+                  <td style="font-weight: 700; font-size: 0.85rem; color: ${levelColor}">${levelLabel}</td>
                 </tr>
               `;
             });
 
-            html += '</tbody></table>';
-            container.innerHTML = html;
-          } catch (err) {
-            console.error(err);
-            container.innerHTML = `<div class="empty-state"><p>Analysis failed: ${err.message}</p></div>`;
-          } finally {
-            runBtn.disabled = false;
-            runBtn.textContent = "Run Analysis";
-          }
-        }, 800);
+          html += '</tbody></table>';
+          container.innerHTML = html;
+        } catch (err) {
+          console.error("[RUN ANALYSIS] Error:", err);
+          container.innerHTML = `
+            <div class="empty-state">
+              <p style="color: #ef4444;">Analysis failed to execute.</p>
+              <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">Error: ${err.message}</p>
+              <p style="font-size: 0.75rem; margin-top: 0.3rem; opacity: 0.5;">Check browser console for details</p>
+            </div>`;
+        } finally {
+          runBtn.disabled = false;
+          runBtn.textContent = "Run Analysis";
+        }
       });
+
+      function escapeHtml(str) {
+        return (str || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
 
       function renderHistory() {
         const history = getHistory();
